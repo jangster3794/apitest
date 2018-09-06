@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+   <body>
+       <h1>All Data</h1>
+       <div>
+           {% for row in rows %}
+            <div>
+                {{row[0]}}&emsp;&emsp;{{row[1]}}&emsp;&emsp;{{row[2]}}&emsp;&emsp;{{row[3]}}&emsp;&emsp;{{row[4]}}&emsp;&emsp;{{row[5]}}
+            </div>
+           {% endfor %}
+       </div>
+   </body>
+</html>

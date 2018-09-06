@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+   <body>
+       <h1>All Nearby Locations</h1>
+       <div>
+        {% for row in rows %}
+        <div>
+            {{row[0]}}&emsp;&emsp;{{row[1]}}&emsp;&emsp;
+        </div>
+        {% endfor %}
+        </div>
+   </body>
+</html>
