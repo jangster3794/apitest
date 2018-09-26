@@ -3,21 +3,18 @@ import csv
 import psycopg2
 import json
 from math import sin, cos, sqrt, atan2, radians
+from shapely.geometry import shape, Point
 
 conn_string = "dbname=mydb user=postgres password=12345678"
 conn = psycopg2.connect(conn_string)
 cursor=conn.cursor()
-
-conn_string_geo = "dbname=geojsondb user=postgres password=12345678"
-conn_geo = psycopg2.connect(conn_string_geo)
-cursor_geo=conn_geo.cursor()
 
 app= Flask(__name__)
 
 @app.route("/")
 def index():
     if request.method == "GET":
-        select_statement = ("Select * from data.temp_table")
+        select_statement = ("Select * from data.test")
         cursor.execute(select_statement)
         rows  = cursor.fetchall()
         return render_template ('new.html', rows=rows)
@@ -32,21 +29,30 @@ def add_data():
         longitude   = request.form['longitude']
         accuracy    = request.form['accuracy']
         data = (key,place_name,admin_name1,latitude,longitude,accuracy)
-        insert_statement = "INSERT INTO data.temp_table (key,place_name,admin_name1,latitude,longitude,accuracy)""VALUES (%s, %s, %s, %s, %s, %s)"
+        insert_statement = "INSERT INTO data.test (key,place_name,admin_name1,latitude,longitude,accuracy)""VALUES (%s, %s, %s, %s, %f, %f)"
         cursor.execute(insert_statement, data )
         conn.commit()
     return render_template('add-form.html')
 
-@app.route("/get_using_postgres")
+@app.route("/get_using_postgres",methods=["GET","POST"])
 def in_radius_postgres():
-    return 'Coming soon.'
+    if request.method=='GET':
+        return render_template('get-distance-postgres.html')
+    if request.method=='POST':
+        lat1 = float(request.form['latitude'])
+        lon1 = float(request.form['longitude'])
+        distance_asked=float(request.form['distance'])
+        select_statement=("select * from data.test where earth_distance(ll_to_earth(%s,%s), ll_to_earth(latitude, longitude)) <= %s*1000;" %(lat1,lon1,distance_asked))
+        cursor.execute(select_statement)
+        rows = cursor.fetchall()
+        return render_template('result.html',rows=rows)
 
 @app.route("/get_using_self", methods=["GET", "POST"])
 def in_radius():
     if request.method=='GET':
         return render_template ('get-distance.html')
     if request.method=='POST':
-        select_statement = ("Select * from data.temp_table")
+        select_statement = ("Select * from data.test")
         cursor.execute(select_statement)
         rows  = cursor.fetchall()
         lat1 = float(request.form['latitude'])
@@ -70,6 +76,27 @@ def in_radius():
 
 @app.route('/geo_json', methods=["GET", "POST"])
 
+def geo_json():
+    if request.method=='GET':
+        return render_template('get-geo-json.html')
+
+    if request.method=='POST':
+        lat = float (request.form['geo_lat'])
+        lon = float (request.form['geo_lon'])
+        with open('geojson.json') as f:
+            js = json.load(f)
+
+        # construct point based on lon/lat returned by geocoder
+        point = Point(lat,lon)
+
+        # check each polygon to see if it contains the point
+        avail_pincodes=[]
+        for feature in js['features']:
+            polygon = shape(feature['geometry'])
+            if polygon.contains(point):
+                avail_pincodes.append(feature['properties'])
+        return render_template('result-geo-json.html',rows=avail_pincodes)
+
 # Functions used to add json to database
 # def format_data(json_data):
 #     data = []
@@ -82,7 +109,7 @@ def in_radius():
 #     with open(r"C:\Users\Tashu.JANGSTER\Desktop\Interview\geojson.json", "r") as f:
 #         json_data = json.loads(f.read())
 #         all_data = format_data(json_data)
-#         insert_statement = """INSERT INTO geojson.data (name,type,parent,geo_type,geo_lat,geo_lon) VALUES ('%s', '%s', '%s', '%s', '%s', '%s')"""
+#         insert_statement = """INSERT INTO data.geojson (name,type,parent,geo_type,geo_lat,geo_lon) VALUES ('%s', '%s', '%s', '%s', '%s', '%s')"""
         
 #         for data in all_data:
 #             name=data['name']
@@ -91,25 +118,8 @@ def in_radius():
 #             geo_type=data['geo_type']
 #             geo_lat=data['lat']
 #             geo_lon=data['lon']
-#             cursor_geo.execute(insert_statement % (name,itype,parent,geo_type,geo_lat,geo_lon))
-#             conn_geo.commit()
-
-def geo_json():
-    if request.method=='GET':
-        return render_template('get-geo-json.html')
-
-    if request.method=='POST':
-        lat = float (request.form['geo_lat'])
-        lon = float (request.form['geo_lon'])
-        select_statement = ("Select * from geojson.data")
-        cursor_geo.execute(select_statement)
-        rows  = cursor_geo.fetchall()
-        all_coords=[]
-        for row in rows:
-            if lat==float (row[4]) and lon==float(row[5]):
-                all_coords.append(row)
-                print (row)
-        return render_template('result-geo-json.html',rows=all_coords)
+#             cursor.execute(insert_statement % (name,itype,parent,geo_type,geo_lat,geo_lon))
+#             conn.commit()
 
 if __name__ == "__main__":
     app.run(debug=True)

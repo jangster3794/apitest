@@ -4,9 +4,8 @@
        <h1>Location</h1>
        <div>
         {% for row in rows %}
-        {{"NAME"}}&emsp;&emsp;&emsp;&emsp;{{"TYPE"}}&emsp;&emsp;&emsp;&emsp;{{"PARENT"}}&emsp;&emsp;&emsp;&emsp;{{"GEO_TYPE"}}&emsp;&emsp;&emsp;&emsp;{{"GEO_LAT"}}&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;{{"GEO_LON"}}
         <div>
-            {{row[0]}}&emsp;&emsp;&emsp;&emsp;{{row[1]}}&emsp;&emsp;&emsp;&emsp;{{row[2]}}&emsp;&emsp;&emsp;&emsp;{{row[3]}}&emsp;&emsp;&emsp;&emsp;{{row[4]}}&emsp;&emsp;&emsp;&emsp;{{row[5]}}
+            {{row}}
         </div>
         {% endfor %}
         </div>
